@@ -3,6 +3,7 @@ import SplashScreen from "./screens/SplashScreen";
 import LoginScreen from "./screens/LoginScreen";
 import HomeScreen from "./screens/HomeScreen";
 import ChatScreen from "./screens/ChatScreen";
+import { Routes, Route } from "react-router-dom";
 import LoginReminder from "./screens/LoginReminder";
 
 function App() {
@@ -10,10 +11,13 @@ function App() {
 
   return (
     <>
-     {/* <LoginScreen/> */}
-     {/* <HomeScreen/> */}
-     {/* <ChatScreen/> */}
-     <LoginReminder/>
+      <Routes>
+        <Route path="/" element={<SplashScreen />} /> 
+        <Route path="/home" element={<HomeScreen />} />
+        <Route path="/login" element={<LoginScreen />} />
+        <Route path="/chat" element={<ChatScreen />} />
+      </Routes>
+
     </>
   );
 }

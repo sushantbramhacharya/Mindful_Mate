@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 const SplashScreen = () => {
   return (
     <div className="w-screen h-screen flex flex-col justify-center items-center">
@@ -8,7 +9,7 @@ const SplashScreen = () => {
           </div>
         </div>
         <div>
-        <a className="!text-white inline-block m-2 px-6 py-4 rounded-4xl bg-[#951FD3]" href="#">Start Your Journey</a>
+        <Link className="!text-white inline-block m-2 px-6 py-4 rounded-4xl bg-[#951FD3]" to="/login">Start Your Journey</Link>
         </div>
       </div>
   )
