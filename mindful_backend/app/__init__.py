@@ -11,7 +11,6 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(DevelopmentConfig)
     
-    print("Mongo URI:", app.config.get("MONGO_URI"))
     mongo.init_app(app)
 
     from .routes import main

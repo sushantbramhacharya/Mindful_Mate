@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, request, jsonify
 from app import mongo
 from app.models.user import User 
 
@@ -6,24 +6,25 @@ main = Blueprint('main', __name__)
 
 @main.route('/api/users')
 def get_users():
-    users = list(mongo.db.users.find())  # users is your collection name
+    users = list(mongo.db.users.find())
     for user in users:
-        user['_id'] = str(user['_id'])  # Convert ObjectId to string
+        user['_id'] = str(user['_id'])
     return jsonify(users)
-
 
 @main.route('/api/register', methods=['POST'])
 def register():
-    data = request.get_json()
+    if request.is_json:
+        data = request.get_json()
+    else:
+        data = request.form
 
     name = data.get('name')
     email = data.get('email')
     password = data.get('password')
     confirm_password = data.get('confirm_password')
 
-    # Basic validation
     if not all([name, email, password, confirm_password]):
-        return jsonify({'error': 'Please provide name, email, password and confirm_password'}), 400
+        return jsonify({'error': 'Please provide name, email, password, and confirm_password'}), 400
 
     if password != confirm_password:
         return jsonify({'error': 'Passwords do not match'}), 400
@@ -39,7 +40,10 @@ def register():
 
 @main.route('/api/login', methods=['POST'])
 def login():
-    data = request.get_json()
+    if request.is_json:
+        data = request.get_json()
+    else:
+        data = request.form
 
     email = data.get('email')
     password = data.get('password')
@@ -49,7 +53,6 @@ def login():
 
     user = User.find_by_email(email)
     if user and user.check_password(password):
-        # For now, just return success. Later, you can add JWT tokens or sessions.
         return jsonify({'message': 'Login successful', 'user': user.to_dict()}), 200
 
     return jsonify({'error': 'Invalid email or password'}), 401
