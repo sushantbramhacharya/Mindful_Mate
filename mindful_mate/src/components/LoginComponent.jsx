@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 
 const LoginComponent = ({setLoginSwitch, loginSwitch }) => {
   return (
@@ -62,6 +62,24 @@ const RegisterForm =()=>{
 }
 
 const LoginForm =()=>{
+  const [email,setEmail]=useState("");
+  const [password,setPassword]=useState("");
+  const RequestLogin=(e)=>{
+    e.preventDefault()
+    fetch("http://127.0.0.1:5000/api/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        email: email,
+        password: password,
+      })
+    })
+    .then(response => response.json())
+    .then(data => console.log("Response:", data))
+    .catch(error => console.error("Error:", error));
+  }
   return(
   <form className="flex flex-col space-y-4">
             <div>
@@ -69,6 +87,8 @@ const LoginForm =()=>{
                 Email
               </label>
               <input
+              onChange={(e)=>setEmail(e.target.value)}
+              value={email}
                 type="email"
                 className="w-full border-b border-purple-900 bg-transparent outline-none py-1 text-purple-900"
                 placeholder="Enter your email"
@@ -80,13 +100,15 @@ const LoginForm =()=>{
                 Password
               </label>
               <input
+              onChange={(e)=>setPassword(e.target.value)}
+              value={password}
                 type="password"
                 className="w-full border-b border-purple-900 bg-transparent outline-none py-1 text-purple-900"
                 placeholder="Enter your password"
               />
             </div>
 
-            <button className="bg-gradient-to-r from-purple-500 to-purple-800 text-white px-6 py-2 rounded-full">
+            <button onClick={RequestLogin} className="bg-gradient-to-r from-purple-500 to-purple-800 text-white px-6 py-2 rounded-full">
               Login
             </button>
           </form>
