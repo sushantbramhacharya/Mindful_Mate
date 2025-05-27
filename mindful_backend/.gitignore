@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+instance/
+.env
+.env.*
+*.sqlite3
+*.log
+config.py
+
+mindful
