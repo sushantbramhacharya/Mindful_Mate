@@ -11,7 +11,7 @@ mongo = PyMongo()
 def create_app():
     app = Flask(__name__)
     app.config.from_object(DevelopmentConfig)
-    CORS(app)
+    CORS(app, supports_credentials=True, origins=["http://localhost:5173"])
     mongo.init_app(app)
 
     from .routes import main
