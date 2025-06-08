@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mindful_app/screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/splash_screen.dart';
 import 'screens/register_screen.dart';
@@ -13,7 +14,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Purple Theme App',
+      title: 'Mindful Mate',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.purple,
@@ -21,7 +22,8 @@ class MyApp extends StatelessWidget {
       home: const SplashScreen(),
       routes: {
         '/login': (context) => const LoginScreen(),
-        '/register': (context) =>const RegisterScreen()
+        '/register': (context) =>const RegisterScreen(),
+        '/home': (context) =>const HomeScreen()
         // You can add other routes here, like register, etc.
       },
     );

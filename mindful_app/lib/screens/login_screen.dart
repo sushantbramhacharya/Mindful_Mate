@@ -1,5 +1,33 @@
 import 'package:flutter/material.dart';
 
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+
+Future<bool> loginUser(String email, String password) async {
+  const url = 'http://10.0.2.2:5000/api/login'; // Android emulator
+
+  try {
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email, 'password': password}),
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('is_logged_in', true);
+      await prefs.setString('user', data['user']['id']); // optional
+
+      return true;
+      
+    } else {
+      return false;
+    }
+  } catch (e) {
+    return false;
+  }
+}
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -107,12 +135,26 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    onPressed: () {
+                    onPressed: () async {
                       if (_formKey.currentState!.validate()) {
                         _formKey.currentState!.save();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Logging in as $email')),
-                        );
+
+                        final success = await loginUser(email, password);
+
+                        if (success) {
+                          if (!mounted) return;
+                          Navigator.pushReplacementNamed(
+                            context,
+                            '/home',
+                          ); // or wherever
+                        } else {
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Invalid email or password'),
+                            ),
+                          );
+                        }
                       }
                     },
                     child: const Text(
