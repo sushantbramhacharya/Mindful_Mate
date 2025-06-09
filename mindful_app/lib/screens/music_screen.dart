@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+// Bottom Sheet Music Player
 class MusicPlayerWidget extends StatefulWidget {
   final String title;
   final String artist;
@@ -16,7 +17,7 @@ class MusicPlayerWidget extends StatefulWidget {
 
 class _MusicPlayerWidgetState extends State<MusicPlayerWidget> {
   bool isPlaying = false;
-  double progress = 0.0; // placeholder for slider
+  double progress = 0.0;
 
   void togglePlayPause() {
     setState(() {
@@ -27,7 +28,6 @@ class _MusicPlayerWidgetState extends State<MusicPlayerWidget> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      // Styling the popup
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.purple[100],
@@ -36,7 +36,7 @@ class _MusicPlayerWidgetState extends State<MusicPlayerWidget> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Header with title and close button
+          // Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -51,9 +51,9 @@ class _MusicPlayerWidgetState extends State<MusicPlayerWidget> {
             ],
           ),
 
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
 
-          // Track title and artist
+          // Song title and artist
           Text(
             widget.title,
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
@@ -67,7 +67,7 @@ class _MusicPlayerWidgetState extends State<MusicPlayerWidget> {
 
           const SizedBox(height: 16),
 
-          // Progress slider (non-functional placeholder)
+          // Progress slider
           Slider(
             value: progress,
             min: 0,
@@ -92,15 +92,39 @@ class _MusicPlayerWidgetState extends State<MusicPlayerWidget> {
   }
 }
 
-class MusicScreen extends StatelessWidget {
+// Main Music Screen with Categories
+class MusicScreen extends StatefulWidget {
   const MusicScreen({Key? key}) : super(key: key);
 
-  static const List<Map<String, String>> songs = [
-    {'title': 'Sunshine', 'artist': 'John Doe'},
-    {'title': 'Moonlight', 'artist': 'Jane Smith'},
-    {'title': 'Waves', 'artist': 'Ocean Band'},
-    {'title': 'Mountains', 'artist': 'High Peak'},
+  @override
+  State<MusicScreen> createState() => _MusicScreenState();
+}
+
+class _MusicScreenState extends State<MusicScreen> {
+  String selectedCategory = 'All';
+
+  static const List<String> categories = [
+    'All',
+    'Meditation',
+    'Focus',
+    'Relaxation',
+    'Sleep',
+    'Mood Boost',
   ];
+
+  static const List<Map<String, String>> songs = [
+    {'title': 'Sunshine', 'artist': 'John Doe', 'category': 'Mood Boost'},
+    {'title': 'Moonlight', 'artist': 'Jane Smith', 'category': 'Sleep'},
+    {'title': 'Waves', 'artist': 'Ocean Band', 'category': 'Relaxation'},
+    {'title': 'Mountains', 'artist': 'High Peak', 'category': 'Meditation'},
+    {'title': 'Forest Rain', 'artist': 'Zen Sounds', 'category': 'Sleep'},
+    {'title': 'Focus Beats', 'artist': 'Clarity', 'category': 'Focus'},
+  ];
+
+  List<Map<String, String>> get filteredSongs {
+    if (selectedCategory == 'All') return songs;
+    return songs.where((song) => song['category'] == selectedCategory).toList();
+  }
 
   void _openMusicPlayer(BuildContext context, String title, String artist) {
     showModalBottomSheet(
@@ -116,26 +140,63 @@ class MusicScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Songs'),
-        backgroundColor: Colors.purple,
-      ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(8),
-        itemCount: songs.length,
-        itemBuilder: (context, index) {
-          final song = songs[index];
-          return Card(
-            margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: ListTile(
-              leading: const Icon(Icons.music_note, color: Colors.purple),
-              title: Text(song['title']!),
-              subtitle: Text(song['artist']!),
-              onTap: () => _openMusicPlayer(context, song['title']!, song['artist']!),
+      
+      body: Column(
+        children: [
+          const SizedBox(height: 50),
+          // Category selector
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              children: categories.map((category) {
+                final isSelected = category == selectedCategory;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: ChoiceChip(
+                    label: Text(category),
+                    selected: isSelected,
+                    onSelected: (_) {
+                      setState(() => selectedCategory = category);
+                    },
+                    selectedColor: Colors.purple.shade200,
+                    labelStyle: TextStyle(
+                      color: isSelected ? Colors.white : Colors.black,
+                    ),
+                    backgroundColor: Colors.grey[200],
+                  ),
+                );
+              }).toList(),
             ),
-          );
-        },
+          ),
+          const SizedBox(height: 8),
+          // Songs list
+          Expanded(
+            child: filteredSongs.isEmpty
+                ? const Center(child: Text('No songs in this category.'))
+                : ListView.builder(
+                    padding: const EdgeInsets.all(8),
+                    itemCount: filteredSongs.length,
+                    itemBuilder: (context, index) {
+                      final song = filteredSongs[index];
+                      return Card(
+                        margin:
+                            const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        child: ListTile(
+                          leading:
+                              const Icon(Icons.music_note, color: Colors.purple),
+                          title: Text(song['title']!),
+                          subtitle: Text(song['artist']!),
+                          onTap: () => _openMusicPlayer(
+                              context, song['title']!, song['artist']!),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
       ),
     );
   }

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
 import 'package:http/http.dart' as http;
+import 'package:mindful_app/config.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<bool> loginUser(String email, String password) async {
-  const url = 'http://10.0.2.2:5000/api/login'; 
+  const url = '${Config.baseUrl}/api/login'; 
 
   try {
     final response = await http.post(
