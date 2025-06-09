@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mindful_app/screens/chat_screen.dart';
+import 'package:mindful_app/screens/music_screen.dart';
 import 'package:mindful_app/screens/post_screen.dart';
 import 'package:mindful_app/screens/profile_screen.dart';
 
@@ -14,7 +15,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 3; // Default: Home
 
   final List<Widget> _screens = [
-    const Center(child: Text('Songs / Posts', style: TextStyle(fontSize: 24))),
+    const Center(child: MusicScreen()),
     const Center(child: PostsScreen()),
     const SizedBox(), // Empty center for FAB
     const Center(child: Text('Games', style: TextStyle(fontSize: 24))),
@@ -91,7 +92,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
 
               const SizedBox(width: 48), // For FAB spacing
-              // Games
+              // Meditation
               Container(
                 decoration: BoxDecoration(
                   color: _selectedIndex == 3
@@ -101,7 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 padding: const EdgeInsets.all(8),
                 child: IconButton(
-                  icon: Icon(Icons.videogame_asset),
+                  icon: Icon(Icons.spa),
                   color: Colors.purple[800],
                   onPressed: () => _onTabSelected(3),
                 ),
