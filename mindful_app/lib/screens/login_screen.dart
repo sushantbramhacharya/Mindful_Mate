@@ -5,7 +5,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<bool> loginUser(String email, String password) async {
-  const url = 'http://10.0.2.2:5000/api/login'; // Android emulator
+  const url = 'http://10.0.2.2:5000/api/login'; 
 
   try {
     final response = await http.post(
@@ -13,18 +13,22 @@ Future<bool> loginUser(String email, String password) async {
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'email': email, 'password': password}),
     );
+    print("Working");
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       final prefs = await SharedPreferences.getInstance();
+
       await prefs.setBool('is_logged_in', true);
-      await prefs.setString('user', data['user']['id']); // optional
+      await prefs.setString('token', data['token']); 
+      await prefs.setString('user_id', data['user']['id'].toString());
 
       return true;
-      
     } else {
+      print("Login failed: ${response.body}");
       return false;
     }
   } catch (e) {
+    print("Error during login: $e");
     return false;
   }
 }

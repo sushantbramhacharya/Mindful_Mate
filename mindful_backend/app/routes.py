@@ -38,6 +38,10 @@ def register():
 
     return jsonify({'message': 'User created successfully', 'user': user.to_dict()}), 201
 
+import jwt
+import datetime
+from flask import current_app
+
 @main.route('/api/login', methods=['POST'])
 def login():
     if request.is_json:
@@ -53,6 +57,17 @@ def login():
 
     user = User.find_by_email(email)
     if user and user.check_password(password):
-        return jsonify({'message': 'Login successful', 'user': user.to_dict()}), 200
+        # Create JWT token
+
+        token = jwt.encode({
+            'user_id': user.to_dict()['id'],
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)
+        }, current_app.config['SECRET_KEY'], algorithm='HS256')
+
+        return jsonify({
+            'message': 'Login successful',
+            'token': token,
+            'user': user.to_dict()
+        }), 200
 
     return jsonify({'error': 'Invalid email or password'}), 401
