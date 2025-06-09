@@ -24,7 +24,7 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/register': (context) =>const RegisterScreen(),
         '/home': (context) =>const HomeScreen()
-        // You can add other routes here, like register, etc.
+        
       },
     );
   }

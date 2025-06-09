@@ -3,6 +3,8 @@ import 'package:mindful_app/screens/chat_screen.dart';
 import 'package:mindful_app/screens/music_screen.dart';
 import 'package:mindful_app/screens/post_screen.dart';
 import 'package:mindful_app/screens/profile_screen.dart';
+import 'package:mindful_app/screens/welbeing_screen.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,7 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
     const Center(child: MusicScreen()),
     const Center(child: PostsScreen()),
     const SizedBox(), // Empty center for FAB
-    const Center(child: Text('Games', style: TextStyle(fontSize: 24))),
+    const Center(child: WellbeingScreen()),
     const Center(child: ProfileScreen()),
   ];
 
