@@ -1,14 +1,22 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
 
-// Bottom Sheet Music Player
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:just_audio/just_audio.dart';
+import 'package:mindful_app/config.dart';
+import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
+
 class MusicPlayerWidget extends StatefulWidget {
   final String title;
   final String artist;
+  final String audioUrl;
 
   const MusicPlayerWidget({
     Key? key,
     required this.title,
     required this.artist,
+    required this.audioUrl,
   }) : super(key: key);
 
   @override
@@ -16,13 +24,61 @@ class MusicPlayerWidget extends StatefulWidget {
 }
 
 class _MusicPlayerWidgetState extends State<MusicPlayerWidget> {
+  final AudioPlayer _player = AudioPlayer();
   bool isPlaying = false;
-  double progress = 0.0;
+  Duration duration = Duration.zero;
+  Duration position = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _initPlayer();
+  }
+
+  Future<void> _initPlayer() async {
+    try {
+      await _player.setUrl(widget.audioUrl);
+      duration = _player.duration ?? Duration.zero;
+
+      // Position stream
+      _player.positionStream.listen((pos) {
+        setState(() => position = pos);
+      });
+
+      // Player state stream
+      _player.playerStateStream.listen((state) {
+        setState(() => isPlaying = state.playing);
+      });
+
+      // Duration stream for dynamically loaded audio
+      _player.durationStream.listen((dur) {
+        if (dur != null) {
+          setState(() => duration = dur);
+        }
+      });
+    } catch (e) {
+      print("Error loading audio: $e");
+    }
+  }
+
+  @override
+  void dispose() {
+    _player.dispose();
+    super.dispose();
+  }
 
   void togglePlayPause() {
-    setState(() {
-      isPlaying = !isPlaying;
-    });
+    if (isPlaying) {
+      _player.pause();
+    } else {
+      _player.play();
+    }
+  }
+
+  String _formatDuration(Duration duration) {
+    final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
   }
 
   @override
@@ -67,15 +123,22 @@ class _MusicPlayerWidgetState extends State<MusicPlayerWidget> {
 
           const SizedBox(height: 16),
 
+          // Timer text
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(_formatDuration(position)),
+              Text(_formatDuration(duration)),
+            ],
+          ),
+
           // Progress slider
           Slider(
-            value: progress,
+            value: position.inMilliseconds.toDouble().clamp(0, duration.inMilliseconds.toDouble()),
             min: 0,
-            max: 1,
+            max: duration.inMilliseconds.toDouble(),
             onChanged: (value) {
-              setState(() {
-                progress = value;
-              });
+              _player.seek(Duration(milliseconds: value.toInt()));
             },
           ),
 
@@ -92,7 +155,8 @@ class _MusicPlayerWidgetState extends State<MusicPlayerWidget> {
   }
 }
 
-// Main Music Screen with Categories
+
+// Main Music Screen with Categories, fetches from backend
 class MusicScreen extends StatefulWidget {
   const MusicScreen({Key? key}) : super(key: key);
 
@@ -102,6 +166,8 @@ class MusicScreen extends StatefulWidget {
 
 class _MusicScreenState extends State<MusicScreen> {
   String selectedCategory = 'All';
+  List<dynamic> songs = [];
+  bool isLoading = false;
 
   static const List<String> categories = [
     'All',
@@ -110,46 +176,79 @@ class _MusicScreenState extends State<MusicScreen> {
     'Relaxation',
     'Sleep',
     'Mood Boost',
+    // Add other categories dynamically if needed
   ];
 
-  static const List<Map<String, String>> songs = [
-    {'title': 'Sunshine', 'artist': 'John Doe', 'category': 'Mood Boost'},
-    {'title': 'Moonlight', 'artist': 'Jane Smith', 'category': 'Sleep'},
-    {'title': 'Waves', 'artist': 'Ocean Band', 'category': 'Relaxation'},
-    {'title': 'Mountains', 'artist': 'High Peak', 'category': 'Meditation'},
-    {'title': 'Forest Rain', 'artist': 'Zen Sounds', 'category': 'Sleep'},
-    {'title': 'Focus Beats', 'artist': 'Clarity', 'category': 'Focus'},
-  ];
+  final String baseUrl = Config.baseUrl; // Change this to your backend URL
 
-  List<Map<String, String>> get filteredSongs {
-    if (selectedCategory == 'All') return songs;
-    return songs.where((song) => song['category'] == selectedCategory).toList();
+  @override
+  void initState() {
+    super.initState();
+    fetchSongs();
   }
 
-  void _openMusicPlayer(BuildContext context, String title, String artist) {
+  Future<void> fetchSongs() async {
+    setState(() {
+      isLoading = true;
+    });
+    try {
+      final res = await http.get(Uri.parse('$baseUrl/music'));
+      if (res.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(res.body);
+        setState(() {
+          songs = data;
+          // You can update categories dynamically based on fetched data if you want
+        });
+      } else {
+        print("Failed to load songs: ${res.statusCode}");
+      }
+    } catch (e) {
+      print("Error fetching songs: $e");
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  List<dynamic> get filteredSongs {
+    if (selectedCategory == 'All') return songs;
+    return songs.where((song) => song['category']?.toLowerCase() == selectedCategory.toLowerCase()).toList();
+  }
+
+  void _openMusicPlayer(BuildContext context, Map song) {
+    final audioUrl = '$baseUrl/uploads/${song["file_path"]}';
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => MusicPlayerWidget(title: title, artist: artist),
+      builder: (_) => MusicPlayerWidget(
+        title: song['music_name'] ?? 'Unknown',
+        artist: song['author'] ?? 'Unknown',
+        audioUrl: audioUrl,
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final dynamicCategories = ['All', ...{for (var s in songs) s['category']}];
+
     return Scaffold(
-      
+      appBar: AppBar(title: const Text('🎵 Music Manager')),
       body: Column(
         children: [
-          const SizedBox(height: 50),
+          const SizedBox(height: 8),
+
           // Category selector
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Row(
-              children: categories.map((category) {
+              children: dynamicCategories.map((category) {
                 final isSelected = category == selectedCategory;
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 6),
@@ -169,32 +268,32 @@ class _MusicScreenState extends State<MusicScreen> {
               }).toList(),
             ),
           ),
+
           const SizedBox(height: 8),
-          // Songs list
+
+          // Songs list or loader
           Expanded(
-            child: filteredSongs.isEmpty
-                ? const Center(child: Text('No songs in this category.'))
-                : ListView.builder(
-                    padding: const EdgeInsets.all(8),
-                    itemCount: filteredSongs.length,
-                    itemBuilder: (context, index) {
-                      final song = filteredSongs[index];
-                      return Card(
-                        margin:
-                            const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        child: ListTile(
-                          leading:
-                              const Icon(Icons.music_note, color: Colors.purple),
-                          title: Text(song['title']!),
-                          subtitle: Text(song['artist']!),
-                          onTap: () => _openMusicPlayer(
-                              context, song['title']!, song['artist']!),
-                        ),
-                      );
-                    },
-                  ),
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : filteredSongs.isEmpty
+                    ? const Center(child: Text('No songs in this category.'))
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(8),
+                        itemCount: filteredSongs.length,
+                        itemBuilder: (context, index) {
+                          final song = filteredSongs[index];
+                          return Card(
+                            margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            child: ListTile(
+                              leading: const Icon(Icons.music_note, color: Colors.purple),
+                              title: Text(song['music_name'] ?? 'Unknown'),
+                              subtitle: Text(song['author'] ?? 'Unknown'),
+                              onTap: () => _openMusicPlayer(context, song),
+                            ),
+                          );
+                        },
+                      ),
           ),
         ],
       ),
