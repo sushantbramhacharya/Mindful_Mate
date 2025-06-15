@@ -23,5 +23,9 @@ def create_app():
     from app.routes.post import post as post_routes
     app.register_blueprint(main_routes)
     app.register_blueprint(post_routes)
+    from app.routes.mood import mood as mood_routes
+    app.register_blueprint(mood_routes)
+
+
     
     return app
