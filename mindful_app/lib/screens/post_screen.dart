@@ -1,4 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:mindful_app/config.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PostWidget extends StatelessWidget {
   final String title;
@@ -62,8 +66,7 @@ class PostWidget extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.purple[200],
                     borderRadius: BorderRadius.circular(12),
@@ -84,7 +87,7 @@ class PostWidget extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 IconButton(
-                  icon: Icon(Icons.thumb_up, color: Colors.purple),
+                  icon: const Icon(Icons.thumb_up, color: Colors.purple),
                   onPressed: onUpvotePressed,
                 ),
                 Text(
@@ -95,8 +98,7 @@ class PostWidget extends StatelessWidget {
                 const SizedBox(width: 16),
                 TextButton.icon(
                   onPressed: onCommentPressed,
-                  icon: const Icon(Icons.comment,
-                      size: 20, color: Colors.purple),
+                  icon: const Icon(Icons.comment, size: 20, color: Colors.purple),
                   label: const Text(
                     'Comment',
                     style: TextStyle(color: Colors.purple),
@@ -118,7 +120,10 @@ class PostsScreen extends StatefulWidget {
   State<PostsScreen> createState() => _PostsScreenState();
 }
 
+
+
 class _PostsScreenState extends State<PostsScreen> {
+  final TextEditingController _titleController = TextEditingController();
   final TextEditingController _postController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
 
@@ -133,7 +138,7 @@ class _PostsScreenState extends State<PostsScreen> {
     'Health',
     'Education',
   ];
-
+  
   final List<Map<String, dynamic>> _posts = [
     {
       'title': 'Flutter is awesome!',
@@ -153,23 +158,70 @@ class _PostsScreenState extends State<PostsScreen> {
     },
   ];
 
-  void _addPost() {
-    final content = _postController.text.trim();
-    if (content.isEmpty) return;
+  // Send post data to backend with token in header
+  Future<bool> sendPostToServer({
+    required String title,
+    required String content,
+    required String category,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token') ?? '';
 
-    setState(() {
-      _posts.insert(0, {
-        'title': 'New Post',
+    final url = Uri.parse('${Config.baseUrl}/api/posts'); // Replace with your API URL
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'title': title,
         'content': content,
-        'timestamp': _formatCurrentDate(),
-        'category': _selectedCategory,
-        'comments': <String>[],
-        'upvotes': 0,
-      });
-      _selectedCategory = 'General';
-    });
+        'category': category,
+      }),
+    );
 
-    _postController.clear();
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return true;
+    } else {
+      print('Failed to send post: ${response.statusCode} ${response.body}');
+      return false;
+    }
+  }
+
+  void _addPost() async {
+    final title = _titleController.text.trim();
+    final content = _postController.text.trim();
+
+    if (title.isEmpty || content.isEmpty) return;
+
+    final success = await sendPostToServer(
+      title: title,
+      content: content,
+      category: _selectedCategory,
+    );
+
+    if (success) {
+      setState(() {
+        _posts.insert(0, {
+          'title': title,
+          'content': content,
+          'timestamp': _formatCurrentDate(),
+          'category': _selectedCategory,
+          'comments': <String>[],
+          'upvotes': 0,
+        });
+        _selectedCategory = 'General';
+      });
+
+      _titleController.clear();
+      _postController.clear();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to post. Please try again.')),
+      );
+    }
   }
 
   String _formatCurrentDate() {
@@ -214,6 +266,7 @@ class _PostsScreenState extends State<PostsScreen> {
 
   @override
   void dispose() {
+    _titleController.dispose();
     _postController.dispose();
     _searchController.dispose();
     super.dispose();
@@ -228,8 +281,7 @@ class _PostsScreenState extends State<PostsScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Column(
             children: [
-              SizedBox(height: 20,),
-              // 🟦 Search Bar
+              const SizedBox(height: 20),
               TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
@@ -244,12 +296,9 @@ class _PostsScreenState extends State<PostsScreen> {
                 },
               ),
               const SizedBox(height: 12),
-
-              // 🟩 Category Filter
               Row(
                 children: [
-                  const Text('Filter by: ',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  const Text('Filter by: ', style: TextStyle(fontWeight: FontWeight.bold)),
                   DropdownButton<String>(
                     value: _filterCategory,
                     items: ['All', ..._categories]
@@ -266,32 +315,34 @@ class _PostsScreenState extends State<PostsScreen> {
                   const Spacer(),
                 ],
               ),
-              const SizedBox(height: 8),
-
-              // 🟥 New Post Section
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _postController,
-                      maxLines: 1,
-                      decoration: InputDecoration(
-                        hintText: 'Write your post here...',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onSubmitted: (_) => _addPost(),
-                    ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _titleController,
+                maxLines: 1,
+                decoration: InputDecoration(
+                  hintText: 'Post title...',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  const SizedBox(width: 8),
-                 
-                ],
+                ),
               ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
- DropdownButton<String>(
+              const SizedBox(height: 8),
+              TextField(
+                controller: _postController,
+                maxLines: 2,
+                decoration: InputDecoration(
+                  hintText: 'Write your post here...',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onSubmitted: (_) => _addPost(),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  DropdownButton<String>(
                     value: _selectedCategory,
                     items: _categories
                         .map((c) => DropdownMenuItem(value: c, child: Text(c)))
@@ -304,7 +355,6 @@ class _PostsScreenState extends State<PostsScreen> {
                       }
                     },
                   ),
-                  const SizedBox(width: 8),
                   ElevatedButton(
                     onPressed: _addPost,
                     style: ElevatedButton.styleFrom(
@@ -315,13 +365,12 @@ class _PostsScreenState extends State<PostsScreen> {
                     ),
                     child: const Text('Post', style: TextStyle(color: Colors.white)),
                   ),
-                ],)
+                ],
+              ),
             ],
           ),
         ),
         const SizedBox(height: 12),
-
-        // 🟨 Posts List
         Expanded(
           child: _filteredPosts.isEmpty
               ? const Center(child: Text('No posts found.'))
@@ -394,7 +443,11 @@ class _CommentsSheetState extends State<CommentsSheet> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Text('Comments', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.purple[800])),
+            Text('Comments',
+                style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.purple[800])),
             const SizedBox(height: 12),
             Expanded(
               child: comments.isEmpty

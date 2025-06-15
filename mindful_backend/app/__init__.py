@@ -17,7 +17,11 @@ def create_app():
     CORS(app, supports_credentials=True, origins=["http://localhost:5173"])
     mongo.init_app(app)
 
-    from .routes import main
-    app.register_blueprint(main)
 
+    #routes registreation
+    from app.routes.main import main as main_routes
+    from app.routes.post import post as post_routes
+    app.register_blueprint(main_routes)
+    app.register_blueprint(post_routes)
+    
     return app

@@ -4,12 +4,17 @@ from app.models.user import User
 
 main = Blueprint('main', __name__)
 
-@main.route('/api/users')
-def get_users():
-    users = list(mongo.db.users.find())
-    for user in users:
-        user['_id'] = str(user['_id'])
-    return jsonify(users)
+@main.route('/api/users/<user_id>', methods=['GET'])
+def get_user_by_id(user_id):
+    try:
+        user = mongo.db.users.find_one({'_id': ObjectId(user_id)})
+        if user:
+            user['_id'] = str(user['_id'])  # Convert ObjectId to string
+            return jsonify(user), 200
+        else:
+            return jsonify({'error': 'User not found'}), 404
+    except Exception as e:
+        return jsonify({'error': 'Invalid user ID format'}), 400
 
 @main.route('/api/register', methods=['POST'])
 def register():
@@ -200,3 +205,4 @@ def edit_music(music_id):
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
