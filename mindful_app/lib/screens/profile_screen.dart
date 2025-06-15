@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:mindful_app/config.dart';
+import 'package:mindful_app/screens/profile_screens/change_email_screen.dart';
+import 'package:mindful_app/screens/profile_screens/change_password_screen.dart';
+import 'package:mindful_app/screens/profile_screens/helpline_screen.dart';
 import 'package:mindful_app/screens/profile_screens/mood_tracker_screen.dart';
+import 'package:mindful_app/screens/profile_screens/notifications_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -80,12 +83,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
   /// Navigates to the MoodTrackerScreen if 'Track Mood' is selected.
   void _onMenuTap(String option) {
     if (option == 'Track Mood') {
-      // Navigate to the MoodTrackerScreen
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const MoodTrackerScreen()),
       );
-    } else {
+    } else if (option == 'Call Helpline') { // NEW: Navigation for Helpline
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const HelplineScreen()),
+      );
+    } else if (option == 'Notifications') { // NEW: Navigation for Notifications
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+      );
+    }else if (option == 'Change Password') { // NEW: Navigation for Notifications
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const ChangePasswordScreen()),
+      );
+    }else if (option == 'Change Email') { // NEW: Navigation for Notifications
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const ChangeEmailScreen()),
+      );
+    }
+    else {
       // Show a snackbar for other options (for demonstration)
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('$option tapped')),
