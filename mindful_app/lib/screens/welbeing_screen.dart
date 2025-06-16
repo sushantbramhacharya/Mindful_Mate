@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mindful_app/screens/wellbeing_screens/breathing_screen.dart';
+import 'package:mindful_app/screens/wellbeing_screens/excercise_screen.dart';
 import 'package:mindful_app/screens/wellbeing_screens/meditation_screen.dart';
 
 class WellbeingScreen extends StatelessWidget {
@@ -88,19 +89,24 @@ class WellbeingScreen extends StatelessWidget {
               ),
             },
           ),
+          // const SizedBox(height: 16),
+          // _buildWellbeingButton(
+          //   context: context,
+          //   label: 'Yoga',
+          //   imagePath: 'assets/images/yoga.png',
+          //   onPressed: () => _navigateTo(context, 'Yoga'),
+          // ),
           const SizedBox(height: 16),
           _buildWellbeingButton(
             context: context,
-            label: 'Yoga',
-            imagePath: 'assets/images/yoga.png',
-            onPressed: () => _navigateTo(context, 'Yoga'),
-          ),
-          const SizedBox(height: 16),
-          _buildWellbeingButton(
-            context: context,
-            label: 'Physical Exercise',
+            label: 'Physical Exercise and Yoga',
             imagePath: 'assets/images/excersize.png',
-            onPressed: () => _navigateTo(context, 'Exercise'),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const ExerciseScreen(),
+              ),
+            ),
           ),
         ],
       ),
