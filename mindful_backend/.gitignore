@@ -8,5 +8,6 @@ instance/
 .env.*
 *.sqlite3
 *.log
-
-mindful
+/app/uploads/
+/app/ml_model/
+mindful/

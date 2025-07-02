@@ -1,11 +1,8 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
 import 'package:mindful_app/config.dart';
-import 'package:flutter/material.dart';
-import 'package:just_audio/just_audio.dart';
 
 class MusicPlayerWidget extends StatefulWidget {
   final String title;
@@ -40,17 +37,14 @@ class _MusicPlayerWidgetState extends State<MusicPlayerWidget> {
       await _player.setUrl(widget.audioUrl);
       duration = _player.duration ?? Duration.zero;
 
-      // Position stream
       _player.positionStream.listen((pos) {
         setState(() => position = pos);
       });
 
-      // Player state stream
       _player.playerStateStream.listen((state) {
         setState(() => isPlaying = state.playing);
       });
 
-      // Duration stream for dynamically loaded audio
       _player.durationStream.listen((dur) {
         if (dur != null) {
           setState(() => duration = dur);
@@ -92,7 +86,6 @@ class _MusicPlayerWidgetState extends State<MusicPlayerWidget> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -106,10 +99,7 @@ class _MusicPlayerWidgetState extends State<MusicPlayerWidget> {
               ),
             ],
           ),
-
           const SizedBox(height: 12),
-
-          // Song title and artist
           Text(
             widget.title,
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
@@ -120,10 +110,7 @@ class _MusicPlayerWidgetState extends State<MusicPlayerWidget> {
             style: const TextStyle(fontSize: 16, color: Colors.black54),
             textAlign: TextAlign.center,
           ),
-
           const SizedBox(height: 16),
-
-          // Timer text
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -131,8 +118,6 @@ class _MusicPlayerWidgetState extends State<MusicPlayerWidget> {
               Text(_formatDuration(duration)),
             ],
           ),
-
-          // Progress slider
           Slider(
             value: position.inMilliseconds.toDouble().clamp(0, duration.inMilliseconds.toDouble()),
             min: 0,
@@ -141,8 +126,6 @@ class _MusicPlayerWidgetState extends State<MusicPlayerWidget> {
               _player.seek(Duration(milliseconds: value.toInt()));
             },
           ),
-
-          // Play / Pause button
           IconButton(
             iconSize: 48,
             icon: Icon(isPlaying ? Icons.pause_circle_filled : Icons.play_circle_fill),
@@ -155,8 +138,6 @@ class _MusicPlayerWidgetState extends State<MusicPlayerWidget> {
   }
 }
 
-
-// Main Music Screen with Categories, fetches from backend
 class MusicScreen extends StatefulWidget {
   const MusicScreen({Key? key}) : super(key: key);
 
@@ -166,20 +147,20 @@ class MusicScreen extends StatefulWidget {
 
 class _MusicScreenState extends State<MusicScreen> {
   String selectedCategory = 'All';
+  String searchQuery = '';
   List<dynamic> songs = [];
   bool isLoading = false;
 
-  static const List<String> categories = [
+  static const List<String> defaultCategories = [
     'All',
     'Meditation',
     'Focus',
     'Relaxation',
     'Sleep',
     'Mood Boost',
-    // Add other categories dynamically if needed
   ];
 
-  final String baseUrl = Config.baseUrl; // Change this to your backend URL
+  final String baseUrl = Config.baseUrl;
 
   @override
   void initState() {
@@ -197,7 +178,6 @@ class _MusicScreenState extends State<MusicScreen> {
         final List<dynamic> data = jsonDecode(res.body);
         setState(() {
           songs = data;
-          // You can update categories dynamically based on fetched data if you want
         });
       } else {
         print("Failed to load songs: ${res.statusCode}");
@@ -212,8 +192,18 @@ class _MusicScreenState extends State<MusicScreen> {
   }
 
   List<dynamic> get filteredSongs {
-    if (selectedCategory == 'All') return songs;
-    return songs.where((song) => song['category']?.toLowerCase() == selectedCategory.toLowerCase()).toList();
+    final lowerQuery = searchQuery.toLowerCase();
+
+    final filteredByCategory = selectedCategory == 'All'
+        ? songs
+        : songs.where((song) =>
+            song['category']?.toLowerCase() == selectedCategory.toLowerCase()).toList();
+
+    return filteredByCategory.where((song) {
+      final title = song['music_name']?.toLowerCase() ?? '';
+      final artist = song['author']?.toLowerCase() ?? '';
+      return title.contains(lowerQuery) || artist.contains(lowerQuery);
+    }).toList();
   }
 
   void _openMusicPlayer(BuildContext context, Map song) {
@@ -270,6 +260,27 @@ class _MusicScreenState extends State<MusicScreen> {
           ),
 
           const SizedBox(height: 8),
+
+          // Search bar
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Search by title or artist',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+              ),
+              onChanged: (value) {
+                setState(() {
+                  searchQuery = value;
+                });
+              },
+            ),
+          ),
 
           // Songs list or loader
           Expanded(
