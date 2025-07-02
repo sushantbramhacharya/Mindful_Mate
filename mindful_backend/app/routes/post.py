@@ -84,49 +84,59 @@ def delete_post(current_user_id, post_id):
 @post.route('/api/posts/<post_id>/upvote', methods=['POST'])
 @token_required
 def upvote_post(current_user_id, post_id):
-    """
-    Increments the upvote count for a specific post.
-    Ensures a user can only upvote once (requires more complex logic,
-    this is a simple increment for demonstration).
-    """
-    # Find the post and increment upvotes
-    result = mongo.db.posts.update_one(
-        {'_id': ObjectId(post_id)},
-        {'$inc': {'upvotes': 1}}
-    )
+    try:
+        oid = ObjectId(post_id)
+    except InvalidId:
+        return jsonify({'error': 'Invalid post ID'}), 400
 
-    if result.matched_count == 0:
+    post = mongo.db.posts.find_one({'_id': oid})
+    if not post:
         return jsonify({'error': 'Post not found'}), 404
-    
-    # You might want to fetch the updated post to return the new upvote count
-    updated_post = mongo.db.posts.find_one({'_id': ObjectId(post_id)})
-    if updated_post:
-        updated_post['_id'] = str(updated_post['_id'])
-        return jsonify({'message': 'Post upvoted', 'upvotes': updated_post.get('upvotes', 0)}), 200
-    else:
-        return jsonify({'error': 'Could not retrieve updated post'}), 500
 
+    upvoters = post.get('upvoters', [])
+
+    if current_user_id in upvoters:
+        # User already upvoted → remove their upvote
+        mongo.db.posts.update_one(
+            {'_id': oid},
+            {'$pull': {'upvoters': current_user_id}}
+        )
+        message = "Upvote removed"
+    else:
+        # User has not upvoted → add their upvote
+        mongo.db.posts.update_one(
+            {'_id': oid},
+            {'$push': {'upvoters': current_user_id}}
+        )
+        message = "Post upvoted"
+
+    # Fetch updated post to get current upvote count
+    updated_post = mongo.db.posts.find_one({'_id': oid})
+    updated_post['_id'] = str(updated_post['_id'])
+    upvote_count = len(updated_post.get('upvoters', []))
+
+    return jsonify({'message': message, 'upvotes': upvote_count}), 200
 
 @post.route('/api/posts/<post_id>/comments', methods=['POST'])
 @token_required
 def add_comment(current_user_id, post_id):
-    """
-    Adds a new comment to a specific post.
-    Requires 'comment_content' in the request body.
-    """
     data = request.get_json()
     comment_content = data.get('comment_content')
 
     if not comment_content:
         return jsonify({'error': 'Comment content is required'}), 400
 
+    # Find username from users collection
+    user = mongo.db.users.find_one({'_id': ObjectId(current_user_id)})
+    username = user.get('name') if user else "Unknown"
+
     comment = {
         'user_id': current_user_id,
+        'username': username,              # Add username here
         'content': comment_content,
         'created_at': datetime.datetime.utcnow()
     }
 
-    # Add the comment to the 'comments' array of the post
     result = mongo.db.posts.update_one(
         {'_id': ObjectId(post_id)},
         {'$push': {'comments': comment}}
@@ -135,6 +145,9 @@ def add_comment(current_user_id, post_id):
     if result.matched_count == 0:
         return jsonify({'error': 'Post not found'}), 404
     
+    # Optionally convert ObjectId to string if needed
+    # comment['_id'] = str(comment.get('_id', ''))
+
     return jsonify({'message': 'Comment added', 'comment': comment}), 201
 
 @post.route('/api/posts/<post_id>/comments', methods=['GET'])

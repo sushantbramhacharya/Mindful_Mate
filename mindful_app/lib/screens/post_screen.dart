@@ -724,7 +724,7 @@ class _CommentsSheetState extends State<CommentsSheet> {
                                 itemBuilder: (context, index) {
                                   final comment = _comments[index];
                                   final String commentContent = comment['content'] as String? ?? 'No content';
-                                  final String commentUserId = comment['user_id'] as String? ?? 'Unknown User';
+                                  final String commentUserId = comment['username'] as String? ?? 'Unknown User';
                                   // Parse and format comment timestamp
                                   String commentTimestamp;
                                   String? rawCommentCreatedAtString;
